@@ -4,6 +4,27 @@ import re
 from tqdm import tqdm
 import json
 from datetime import datetime
+import random
+#from names_generator import generate_name fajny do generowania imion
+import numpy as np
+import pandas as pd
+
+def generate_random_date(start_year, end_year):
+    year = random.randint(start_year, end_year)
+    month = random.randint(1, 12)
+    
+    if month in [1, 3, 5, 7, 8, 10, 12]:
+        day = random.randint(1, 31)
+    elif month in [4, 6, 9, 11]:
+        day = random.randint(1, 30)
+    else:
+        if (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0):
+            day = random.randint(1, 29)
+        else:
+            day = random.randint(1, 28)
+
+
+    return datetime(year, month, day)
 
 r_authors = requests.get('https://wolnelektury.pl/api/authors/')
 
@@ -39,6 +60,7 @@ for author in data:
     index += 1
 
 index = 0
+
 data_sql_copy = data_sql.copy()
 for data in tqdm(data_sql_copy, desc="Processing authors", unit="author"):
     r_author = requests.get(f'https://wolnelektury.pl/api/authors/{data["DateOfBirth"]}')
@@ -72,6 +94,23 @@ for data in tqdm(data_sql_copy, desc="Processing authors", unit="author"):
     
     data_sql[index] = data
     index += 1
+
+start_year = 1600
+end_year = 1970
+
+df = pd.read_csv("./books.csv", encoding='ISO-8859-1', sep=';', on_bad_lines='skip')
+
+unique_authors = df['Book-Author'].unique()
+unique_authors_list = unique_authors.tolist()
+
+for author in unique_authors_list:
+    split_name = str(author).split()
+    if len(split_name) >= 2:
+        data_sql.append({'AuthorID': index, 'FirstName': split_name[0], 'LastName': ' '.join(split_name[1:]), 'DateOfBirth': str(generate_random_date(start_year, end_year))})
+    else:
+        data_sql.append({'AuthorID': index, 'FirstName': author_name, 'LastName': '', 'DateOfBirth': str(generate_random_date(start_year, end_year))})
+    index += 1
+
 
 with open(f'{table_name}.json', 'w', encoding='utf-8') as file:
     json.dump(data_sql, file, indent=4, ensure_ascii=False)
