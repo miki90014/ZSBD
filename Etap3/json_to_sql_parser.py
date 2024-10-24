@@ -23,8 +23,12 @@ def json_to_sql(json_obj, table_name):
 
 author_data = open_json("Author.json")
 book_data = open_json("Book.json")
+reader_data = open_json("Reader.json")
 sql_author = json_to_sql(author_data, "Author")
 sql_book = json_to_sql(book_data, "Book")
+sql_reader = json_to_sql(reader_data, "Reader")
+
 
 write_to_file("author.sql", sql_author)
 write_to_file("book.sql", sql_book)
+write_to_file("reader.sql", sql_reader)
