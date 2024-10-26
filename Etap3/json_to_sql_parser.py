@@ -1,38 +1,78 @@
 import json
+import re
+import os
 
 def open_json(filename):
     with open(filename, 'r', encoding='utf-8') as file:
         data = json.load(file)
     return data
 
-def write_to_file(filename, sql_script):
-    with open(filename, 'w', encoding='utf-8') as file:
-        file.write(sql_script)
+
+def write_to_multiple_files(base_filename, sql_script):
+    chunk_count = 1
+    current_chunk = []
+
+    if not os.path.exists(base_filename):
+        os.makedirs(base_filename)
+
+    for line in sql_script.splitlines():
+        current_chunk.append(line)
+        
+        if "COMMIT;" in line:
+            chunk_filename = f"{base_filename}/{base_filename}_{chunk_count}.sql"
+            with open(chunk_filename, 'w', encoding='utf-8') as file:
+                file.write("\n".join(current_chunk))
+            chunk_count += 1
+            current_chunk = []
+    if current_chunk:
+        chunk_filename = f"{base_filename}_chunk_{chunk_count}.sql"
+        with open(chunk_filename, 'w', encoding='utf-8') as file:
+            file.write("\n".join(current_chunk))
+
+def clean_description(description):
+    return re.sub(r"[^\w\s,.]", "", description)
 
 
-def json_to_sql(json_obj, table_name):
+def json_to_sql_with_commit(json_obj, table_name, batch_size=200):
     sql_script = []
 
-    for record in json_obj:
+    for idx, record in enumerate(json_obj):
         columns = ", ".join(record.keys())
-        values = ", ".join([f"'{str(v)}'" for v in record.values()])
-        insert_stmt = f"INSERT INTO {table_name} ({columns}) VALUES ({values});"
+        values = []
+
+        for key, value in record.items():
+            if key in ["DateOfBirth", "PublicationDate", "ReviewDate", "JoinDate"]:
+                if " " in value:
+                    values.append(f"TO_DATE('{value.split()[0]}', 'YYYY-MM-DD')")
+                else:
+                    values.append("''")
+            elif key == "Description":
+                cleaned_value = clean_description(value)
+                values.append(f"'{cleaned_value}'")
+            else:
+                values.append(f"'{str(value)}'")
+
+        insert_stmt = f"INSERT INTO {table_name} ({columns}) VALUES ({', '.join(values)});"
         sql_script.append(insert_stmt)
 
+        if (idx + 1) % batch_size == 0:
+            sql_script.append("COMMIT;")  # Zatwierdza co `batch_size` wierszy
+
+    sql_script.append("COMMIT;")  # Zatwierdzenie pozostałych wierszy na końcu
     return "\n".join(sql_script)
 
 author_data = open_json("Author.json")
 book_data = open_json("Book.json")
 reader_data = open_json("Reader.json")
 review_data = open_json("Review.json")
-sql_author = json_to_sql(author_data, "Author")
-sql_book = json_to_sql(book_data, "Book")
-sql_reader = json_to_sql(reader_data, "Reader")
-sql_review = json_to_sql(review_data, "Review")
+sql_author = json_to_sql_with_commit(author_data, "Authors")
+sql_book = json_to_sql_with_commit(book_data, "Books")
+sql_reader = json_to_sql_with_commit(reader_data, "Readers")
+sql_review = json_to_sql_with_commit(review_data, "Reviews")
 
 
 
-write_to_file("author.sql", sql_author)
-write_to_file("book.sql", sql_book)
-write_to_file("reader.sql", sql_reader)
-write_to_file("review.sql", sql_review)
+write_to_multiple_files("author", sql_author)
+write_to_multiple_files("book", sql_book)
+write_to_multiple_files("reader", sql_reader)
+write_to_multiple_files("review", sql_review)

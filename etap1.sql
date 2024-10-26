@@ -1,15 +1,15 @@
 -- Tworzenie tabeli Autorzy
 CREATE TABLE Authors (
-    AuthorID INT PRIMARY KEY AUTO_INCREMENT,
+    AuthorID INT PRIMARY KEY,
     FirstName VARCHAR(50) NOT NULL,
-    LastName VARCHAR(50) NOT NULL,
+    LastName VARCHAR(50),
     DateOfBirth DATE,
-    Country VARCHAR(50)
+    Description VARCHAR(1000)
 );
 
 -- Tworzenie tabeli Książki
 CREATE TABLE Books (
-    BookID INT PRIMARY KEY AUTO_INCREMENT,
+    BookID INT PRIMARY KEY,
     Title VARCHAR(100) NOT NULL,
     PublicationDate DATE,
     Genre VARCHAR(50),
@@ -19,16 +19,16 @@ CREATE TABLE Books (
 
 -- Tworzenie tabeli Czytelnicy
 CREATE TABLE Readers (
-    ReaderID INT PRIMARY KEY AUTO_INCREMENT,
+    ReaderID INT PRIMARY KEY,
     FirstName VARCHAR(50) NOT NULL,
     LastName VARCHAR(50) NOT NULL,
-    Email VARCHAR(100) UNIQUE NOT NULL,
+    Email VARCHAR(150) UNIQUE NOT NULL,
     JoinDate DATE
 );
 
 -- Tworzenie tabeli Egzemplarze książek
 CREATE TABLE BookCopies (
-    CopyID INT PRIMARY KEY AUTO_INCREMENT,
+    CopyID INT PRIMARY KEY,
     BookID INT,
     Location VARCHAR(50),
     IsAvailable CHAR(1) CHECK (IsAvailable IN ('Y', 'N')),
@@ -38,7 +38,7 @@ CREATE TABLE BookCopies (
 
 -- Tworzenie tabeli Wypożyczenia
 CREATE TABLE Loans (
-    LoanID INT PRIMARY KEY AUTO_INCREMENT,
+    LoanID INT PRIMARY KEY,
     CopyID INT,
     ReaderID INT,
     LoanDate DATE NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE Loans (
 
 -- Tworzenie tabeli Kary
 CREATE TABLE Penalties (
-    PenaltyID INT PRIMARY KEY AUTO_INCREMENT,
+    PenaltyID INT PRIMARY KEY,
     ReaderID INT,
     Amount DECIMAL(10, 2) NOT NULL,
     IssueDate DATE NOT NULL,
@@ -60,11 +60,11 @@ CREATE TABLE Penalties (
 
 -- Tworzenie tabeli Recenzje
 CREATE TABLE Reviews (
-    ReviewID INT PRIMARY KEY AUTO_INCREMENT,
+    ReviewID INT PRIMARY KEY,
     ReaderID INT,
     BookID INT,
     Rating INT CHECK (Rating >= 1 AND Rating <= 5),
-    ReviewText TEXT,
+    ReviewText VARCHAR(1000),
     ReviewDate DATE NOT NULL,
     FOREIGN KEY (ReaderID) REFERENCES Readers(ReaderID),
     FOREIGN KEY (BookID) REFERENCES Books(BookID)

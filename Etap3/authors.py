@@ -51,12 +51,18 @@ data_sql = []
 index = 1
 for author in data:
     author_name = author['name']
+    author_name = author_name.replace("'", "")
+    author_name = author_name.replace("\\", "\\\\")
+    author_name = author_name.replace("%", "\\%")
+    author_name = author_name.replace("_", "\\_")
+    author_name = author_name.replace(";", "")
+    author_name = author_name.replace("&", " and ")
     slug = author['slug']
     split_name = author_name.split()
     if len(split_name) >= 2:
-        data_sql.append({'AuthorID': index, 'FirstName': split_name[0], 'LastName': ' '.join(split_name[1:]), 'DateOfBirth': slug})
+        data_sql.append({'AuthorID': index, 'FirstName': split_name[0][:50], 'LastName': ' '.join(split_name[1:])[:50], 'DateOfBirth': slug})
     else:
-        data_sql.append({'AuthorID': index, 'FirstName': author_name, 'LastName': '', 'DateOfBirth': slug})
+        data_sql.append({'AuthorID': index, 'FirstName': author_name[:50], 'LastName': '', 'DateOfBirth': slug})
     index += 1
 
 index = 0
@@ -65,7 +71,24 @@ data_sql_copy = data_sql.copy()
 for data in tqdm(data_sql_copy, desc="Processing authors", unit="author"):
     r_author = requests.get(f'https://wolnelektury.pl/api/authors/{data["DateOfBirth"]}')
     author_data = r_author.json()
-    data['Description'] = author_data['description_pl']
+    description_data = ''
+    try:
+        description_data = BeautifulSoup(author_data['description_pl'], 'html.parser').get_text()
+        description_data = description_data.replace('\n', '').replace('\r', '').replace('  ', ' ')
+        description_data = re.sub(r'\s+', ' ', description_data)
+        description_data = description_data[:800]
+
+        description_data = description_data.replace("'", "")
+        description_data = description_data.replace("\\", "\\\\")
+        description_data = description_data.replace("%", "\\%")
+        description_data = description_data.replace("_", "\\_")
+        description_data = description_data.replace("´", "")
+        description_data = description_data.replace(";", "")
+        description_data = description_data.replace("&", " and ")
+    except:
+        description_data = ''
+    
+    data['Description'] = description_data
     
     try:
         soup = BeautifulSoup(author_data['description_pl'], 'html')
@@ -104,11 +127,18 @@ unique_authors = df['Book-Author'].unique()
 unique_authors_list = unique_authors.tolist()
 
 for author in unique_authors_list:
-    split_name = str(author).split()
+    author = str(author).replace("'", "")
+    author = author.replace("\\", "\\\\")
+    author = author.replace("%", "\\%")
+    author = author.replace("_", "\\_")
+    author = author.replace("´", "")
+    author = author.replace(";", "")
+    author = author.replace("&", " and ")
+    split_name = author.split()
     if len(split_name) >= 2:
-        data_sql.append({'AuthorID': index, 'FirstName': split_name[0], 'LastName': ' '.join(split_name[1:]), 'DateOfBirth': str(generate_random_date(start_year, end_year))})
+        data_sql.append({'AuthorID': index, 'FirstName': split_name[0][:50], 'LastName': ' '.join(split_name[1:])[:50], 'DateOfBirth': str(generate_random_date(start_year, end_year)), 'Description': ''})
     else:
-        data_sql.append({'AuthorID': index, 'FirstName': author_name, 'LastName': '', 'DateOfBirth': str(generate_random_date(start_year, end_year))})
+        data_sql.append({'AuthorID': index, 'FirstName': author_name[:50], 'LastName': '', 'DateOfBirth': str(generate_random_date(start_year, end_year)), 'Description': ''})
     index += 1
 
 

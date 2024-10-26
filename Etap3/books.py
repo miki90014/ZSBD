@@ -16,6 +16,32 @@ book_genres = [
     "Poetry", "Literary Fiction", "Western", "Crime", "Comedy"
 ]
 
+def clear_author(author):
+    author = str(author).replace("'", "")
+    author = author.replace("\\", "\\\\")
+    author = author.replace("%", "\\%")
+    author = author.replace("_", "\\_")
+    author = author.replace("´", "")
+    author = author.replace(";", "")
+    author = author.replace("&", " and ")
+    split_name = author.split()
+    if len(split_name) >= 2:
+        author = str(split_name[0][:50]) + ' ' + str(' '.join(split_name[1:])[:50])
+    else:
+        author = author[:50]
+    return author
+
+def clear_book_title(title):
+    title = str(title).replace("'", "")
+    title = title.replace("\\", "\\\\")
+    title = title.replace("%", "\\%")
+    title = title.replace("_", "\\_")
+    title = title.replace("´", "")
+    title = title.replace(";", "")
+    title = title.replace("&", " and ")
+    return title[:90]
+
+
 def random_genre():
     return random.choice(book_genres)
 
@@ -61,7 +87,9 @@ index = 1
 
 for book in data:
     title = book['title']
+    title = clear_book_title(title)
     author = book['author']
+    author = clear_author(author)
     authorID = author_mapping.get(author, '')
     genre = book['genre']
     publication_date = str(generate_random_date(start_year, end_year))
@@ -81,7 +109,9 @@ publication_year_list = publication_year.tolist()
 
 index_for_csv = 0
 for book in book_list:
+    title = clear_book_title(book)
     author = author_list[index_for_csv]
+    author = clear_author(author)
     authorID = author_mapping.get(author, '')
     year = publication_year_list[index_for_csv]
     try:
@@ -89,7 +119,7 @@ for book in book_list:
     except:
         public_date = ''
     genre = str(random_genre())
-    data_sql.append({'BookID': index, 'Title': book, 'PublicationDate': publication_date, 'Genre': genre, 'AuthorID': authorID})
+    data_sql.append({'BookID': index, 'Title': title, 'PublicationDate': publication_date, 'Genre': genre, 'AuthorID': authorID})
     index_for_csv += 1
     index += 1
 

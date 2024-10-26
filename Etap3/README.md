@@ -8,3 +8,5 @@
 
 At the end run:
 Run command `python json_to_sql_parser.py`
+Then in file `Etap3\insert.py` add your credentials and path to dir in `SQL_FILES_DIRECTORY = `
+Change `SQL_FILES_DIRECTORY = ` and run it with `python insert.py` in folowing order: `./author`, `./book`, `./reader`, `./review`
