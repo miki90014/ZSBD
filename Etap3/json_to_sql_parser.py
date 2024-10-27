@@ -41,7 +41,7 @@ def json_to_sql_with_commit(json_obj, table_name, batch_size=200):
         values = []
 
         for key, value in record.items():
-            if key in ["DateOfBirth", "PublicationDate", "ReviewDate", "JoinDate"]:
+            if key in ["DateOfBirth", "PublicationDate", "ReviewDate", "JoinDate", "DueDate", "LoanDate", "ReturnDate", "IssueDate", "acquisitionDate"]:
                 if " " in value:
                     values.append(f"TO_DATE('{value.split()[0]}', 'YYYY-MM-DD')")
                 else:
@@ -65,10 +65,18 @@ author_data = open_json("Author.json")
 book_data = open_json("Book.json")
 reader_data = open_json("Reader.json")
 review_data = open_json("Review.json")
+bookcopies_data = open_json("BookCopies.json")
+penalties_data = open_json("Penalties.json")
+loans_data = open_json("Loans.json")
+
+
 sql_author = json_to_sql_with_commit(author_data, "Authors")
 sql_book = json_to_sql_with_commit(book_data, "Books")
 sql_reader = json_to_sql_with_commit(reader_data, "Readers")
 sql_review = json_to_sql_with_commit(review_data, "Reviews")
+sql_bookcopies = json_to_sql_with_commit(bookcopies_data, "BookCopies")
+sql_penalties = json_to_sql_with_commit(penalties_data, "Penalties")
+sql_loans = json_to_sql_with_commit(loans_data, "Loans")
 
 
 
@@ -76,3 +84,6 @@ write_to_multiple_files("author", sql_author)
 write_to_multiple_files("book", sql_book)
 write_to_multiple_files("reader", sql_reader)
 write_to_multiple_files("review", sql_review)
+write_to_multiple_files("book_copies", sql_bookcopies)
+write_to_multiple_files("penalties", sql_penalties)
+write_to_multiple_files("loans", sql_loans)

@@ -41,6 +41,7 @@ CREATE TABLE Loans (
     LoanID INT PRIMARY KEY,
     CopyID INT,
     ReaderID INT,
+    DueDate  DATE NOT NULL,
     LoanDate DATE NOT NULL,
     ReturnDate DATE,
     FOREIGN KEY (CopyID) REFERENCES BookCopies(CopyID),

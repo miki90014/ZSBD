@@ -8,7 +8,7 @@ DB_PASSWORD = "sudo"
 DB_DSN = "localhost:1521/XEPDB1"
 
 # Katalog zawierający pliki SQL
-SQL_FILES_DIRECTORY = "./review"  # Ścieżka do katalogu z plikami SQL
+SQL_FILES_DIRECTORY = "./loans"  # Ścieżka do katalogu z plikami SQL
 
 # Funkcja do wykonywania poleceń SQL z plików
 def execute_sql_file(cursor, filename):

@@ -2,4 +2,8 @@ etap3/author
 etap3/book
 etap3/reader
 etap3/review
+etap3/book_copies
+etap3/penalties
+etap3/loans
 etap3/test.sql
+etap3/BookCopies.json
