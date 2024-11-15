@@ -37,7 +37,7 @@ GROUP BY
 HAVING 
     COUNT(DISTINCT l.LoanID) > 5  -- tylko czytelnicy, którzy wypożyczyli więcej niż 5 książek
     OR SUM(CASE WHEN p.IsPaid = 'N' THEN p.Amount ELSE 0 END) > 0;  -- lub mają zaległe kary
-
+--2:01:56
 
 
 
@@ -72,72 +72,10 @@ GROUP BY
 HAVING 
     COUNT(DISTINCT b.BookID) > 5  -- autor opublikował więcej niż 5 książek
     OR AVG(rv.Rating) >= 4;  -- lub średnia ocena jego książek wynosi co najmniej 4
-
-
-
--- ulepszone zapytanie 
-EXPLAIN PLAN FOR
-UPDATE BookCopies bc
-SET Location = 'Archived'
-WHERE bc.CopyID IN (
-    SELECT bc2.CopyID
-    FROM BookCopies bc2
-    JOIN Books b ON bc2.BookID = b.BookID
-    LEFT JOIN Loans l ON bc2.CopyID = l.CopyID
-    LEFT JOIN Reviews r ON b.BookID = r.BookID
-    LEFT JOIN Penalties p ON l.ReaderID = p.ReaderID  -- Dołączenie tabeli kar
-    WHERE bc2.IsAvailable = 'N'  -- Niedostępne egzemplarze
-      AND (l.LoanDate IS NULL OR l.LoanDate < TO_DATE('2020-01-01', 'YYYY-MM-DD') - INTERVAL '1' YEAR)  -- Nie wypożyczane przez ponad rok
-      AND b.PublicationDate < TO_DATE('2020-01-01', 'YYYY-MM-DD') - INTERVAL '5' YEAR  -- Książki starsze niż 5 lat
-      AND EXISTS (
-          SELECT 1
-          FROM Reviews r2
-          WHERE r2.BookID = b.BookID
-            AND r2.Rating < 3  -- Książki o niskiej ocenie
-      )
-      AND NOT EXISTS (  -- Książki, które nie mają żadnej pozytywnej recenzji
-          SELECT 1
-          FROM Reviews r3
-          WHERE r3.BookID = b.BookID
-            AND r3.Rating >= 4  -- Książki z oceną wyższą lub równą 4
-      )
-      AND (
-          SELECT COUNT(*)
-          FROM Loans l2
-          WHERE l2.CopyID = bc2.CopyID
-            AND l2.LoanDate >= TO_DATE('2020-01-01', 'YYYY-MM-DD') - INTERVAL '2' YEAR  -- Wypożyczenia w ciągu ostatnich 2 lat
-      ) = 0  -- Książki, które nie były wypożyczane w ciągu ostatnich 2 lat
-      AND (
-          SELECT SUM(p.Amount)
-          FROM Penalties p
-          WHERE p.ReaderID IN (SELECT l.ReaderID FROM Loans l WHERE l.CopyID = bc2.CopyID)
-            AND p.IsPaid = 'N'
-            AND p.DueDate < TO_DATE('2020-01-01', 'YYYY-MM-DD')  -- Sprawdzanie niezapłaconych kar
-      ) > 0  -- Książki, dla których występują niezapłacone kary
-    GROUP BY bc2.CopyID, b.BookID
-    HAVING COUNT(l.LoanID) < 5  -- Wypożyczane mniej niż 5 razy
-      AND AVG(r.Rating) < 3  -- Średnia ocena książek autora poniżej 3
-      AND NOT EXISTS (  -- Książki, które były recenzowane przez mniej niż 2 osoby
-          SELECT 1
-          FROM Reviews r4
-          WHERE r4.BookID = b.BookID
-          GROUP BY r4.BookID
-          HAVING COUNT(r4.ReviewID) < 2
-      )
-      AND EXISTS (  -- Książki, które mają przynajmniej jedną recenzję z oceną powyżej 4
-          SELECT 1
-          FROM Reviews r5
-          WHERE r5.BookID = b.BookID
-            AND r5.Rating > 4
-      )
-      AND (
-          SELECT COUNT(*)
-          FROM BookCopies bc3
-          WHERE bc3.BookID = b.BookID
-            AND bc3.IsAvailable = 'Y'
-      ) > 5  -- Książki, które mają co najmniej 6 dostępnych egzemplarzy
-);
-ROLLBACK;
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY());
+--10:18:10
+DELETE FROM PLAN_TABLE;
+COMMIT;
 
 --nowe zapytanie
 EXPLAIN PLAN FOR
@@ -189,6 +127,8 @@ WHERE p.PenaltyID IN (
     HAVING COUNT(l.LoanID) > 3  -- Czytelnik wypożyczył więcej niż 3 książki
 );
 ROLLBACK;
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY());
+--212:09:23
 
 EXPLAIN PLAN FOR
 SELECT 
@@ -241,5 +181,9 @@ ORDER BY
 
 
 SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY());
+--2:38
+
+
+
 DELETE FROM PLAN_TABLE;
 COMMIT;
