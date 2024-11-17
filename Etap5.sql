@@ -6,19 +6,19 @@ SELECT
     r.ReaderID,
     r.FirstName,
     r.LastName,
-    COUNT(DISTINCT l.LoanID) AS TotalLoans,  -- całkowita liczba wypożyczeń
-    SUM(CASE WHEN p.IsPaid = 'N' THEN p.Amount ELSE 0 END) AS UnpaidPenalties,  -- suma niezapłaconych kar
-    COUNT(DISTINCT rv.BookID) AS TotalReviewedBooks,  -- liczba książek, które ocenił
-    AVG(rv.Rating) AS AvgBookRating,  -- średnia ocena książek, które ocenił
+    COUNT(DISTINCT l.LoanID) AS TotalLoans, 
+    SUM(CASE WHEN p.IsPaid = 'N' THEN p.Amount ELSE 0 END) AS UnpaidPenalties,  
+    COUNT(DISTINCT rv.BookID) AS TotalReviewedBooks,  
+    AVG(rv.Rating) AS AvgBookRating, 
     (SELECT COUNT(*) 
      FROM Loans l2 
      WHERE l2.ReaderID = r.ReaderID 
-       AND l2.LoanDate >= TO_DATE('2024-01-01', 'YYYY-MM-DD') - 365) AS LoansLastYear,  -- liczba wypożyczeń w ciągu ostatniego roku
+       AND l2.LoanDate >= TO_DATE('2024-01-01', 'YYYY-MM-DD') - 365) AS LoansLastYear, 
     (SELECT COUNT(*) 
      FROM Penalties p2 
      WHERE p2.ReaderID = r.ReaderID 
        AND p2.IsPaid = 'N' 
-       AND p2.DueDate < TO_DATE('2024-01-01', 'YYYY-MM-DD')) AS OverdueCount  -- liczba zaległych kar
+       AND p2.DueDate < TO_DATE('2024-01-01', 'YYYY-MM-DD')) AS OverdueCount  
 FROM 
     Readers r
 LEFT JOIN 
@@ -31,17 +31,14 @@ WHERE
     EXISTS (SELECT 1 
             FROM Loans l3 
             WHERE l3.ReaderID = r.ReaderID 
-              AND l3.LoanDate >= TO_DATE('2020-01-01', 'YYYY-MM-DD') - 30)  -- sprawdzanie czy czytelnik wypożyczył coś w ostatnich 30 dniach
+              AND l3.LoanDate >= TO_DATE('2020-01-01', 'YYYY-MM-DD') - 30)  
 GROUP BY 
     r.ReaderID, r.FirstName, r.LastName
 HAVING 
-    COUNT(DISTINCT l.LoanID) > 5  -- tylko czytelnicy, którzy wypożyczyli więcej niż 5 książek
-    OR SUM(CASE WHEN p.IsPaid = 'N' THEN p.Amount ELSE 0 END) > 0;  -- lub mają zaległe kary
+    COUNT(DISTINCT l.LoanID) > 5  
+    OR SUM(CASE WHEN p.IsPaid = 'N' THEN p.Amount ELSE 0 END) > 0; 
 --2:01:56
-
-
-
-
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY());
 
 -- nowe zapytanie
 EXPLAIN PLAN FOR
@@ -49,18 +46,18 @@ SELECT
     a.AuthorID,
     a.FirstName,
     a.LastName,
-    COUNT(DISTINCT b.BookID) AS TotalBooksPublished,  -- liczba unikalnych książek opublikowanych
-    AVG(EXTRACT(YEAR FROM b.PublicationDate)) AS AvgPublicationYear,  -- średni rok publikacji
-    COUNT(DISTINCT rv.ReviewID) AS TotalReviews,  -- liczba recenzji dla książek autora
-    AVG(rv.Rating) AS AvgRating,  -- średnia ocena książek autora
+    COUNT(DISTINCT b.BookID) AS TotalBooksPublished,  
+    AVG(EXTRACT(YEAR FROM b.PublicationDate)) AS AvgPublicationYear,  
+    COUNT(DISTINCT rv.ReviewID) AS TotalReviews,  
+    AVG(rv.Rating) AS AvgRating,  
     (SELECT COUNT(*)
      FROM Books b2
      WHERE b2.AuthorID = a.AuthorID
-       AND b2.PublicationDate >= TO_DATE('2020-01-01', 'YYYY-MM-DD')) AS RecentBooksPublished,  -- liczba książek wydanych od 2020 roku
+       AND b2.PublicationDate >= TO_DATE('2020-01-01', 'YYYY-MM-DD')) AS RecentBooksPublished,  
     (SELECT COUNT(*)
      FROM BookCopies bc2
      WHERE bc2.BookID IN (SELECT b3.BookID FROM Books b3 WHERE b3.AuthorID = a.AuthorID)
-       AND bc2.IsAvailable = 'Y') AS TotalAvailableCopies  -- liczba dostępnych egzemplarzy książek autora
+       AND bc2.IsAvailable = 'Y') AS TotalAvailableCopies  
 FROM 
     Authors a
 LEFT JOIN 
@@ -70,8 +67,9 @@ LEFT JOIN
 GROUP BY 
     a.AuthorID, a.FirstName, a.LastName
 HAVING 
-    COUNT(DISTINCT b.BookID) > 5  -- autor opublikował więcej niż 5 książek
-    OR AVG(rv.Rating) >= 4;  -- lub średnia ocena jego książek wynosi co najmniej 4
+    COUNT(DISTINCT b.BookID) > 5  
+    OR AVG(rv.Rating) >= 4;  
+
 SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY());
 --10:18:10
 DELETE FROM PLAN_TABLE;
@@ -97,73 +95,67 @@ WHERE p.PenaltyID IN (
           FROM Loans l2
           WHERE l2.ReaderID = l.ReaderID 
             AND l2.LoanDate >= TO_DATE('2022-01-01', 'YYYY-MM-DD') - INTERVAL '1' YEAR
-      ) > 2  -- Czytelnik ma więcej niż 2 aktywne wypożyczenia w ciągu ostatniego roku
-      AND EXISTS (  -- Książki, które są wypożyczane w określonych lokalizacjach
+      ) > 2  
+      AND EXISTS ( 
           SELECT 1
           FROM BookCopies bc2
           WHERE bc2.CopyID = l.CopyID
             AND bc2.Location like 'Główna aleja%'
       )
-      AND NOT EXISTS (  -- Książki, które mają niską średnią ocenę
+      AND NOT EXISTS ( 
           SELECT 1
           FROM Reviews rv2
           WHERE rv2.BookID = b.BookID
             AND rv2.Rating < 3
       )
-      AND EXISTS (  -- Czytelnik ma niezapłacone kary w sumie powyżej 100 zł
+      AND EXISTS ( 
           SELECT 1
           FROM Penalties p4
           WHERE p4.ReaderID = l.ReaderID
             AND p4.IsPaid = 'N'
           HAVING SUM(p4.Amount) > 100
       )
-      AND (
-          SELECT SUM(p.Amount)
-          FROM Penalties p2
-          WHERE p2.IsPaid = 'N'
-            AND p2.DueDate < TO_DATE('2020-01-01', 'YYYY-MM-DD')  -- Sprawdzanie niezapłaconych kar
-      ) > 0
     GROUP BY p2.PenaltyID, l.ReaderID, bc.Location
-    HAVING COUNT(l.LoanID) > 3  -- Czytelnik wypożyczył więcej niż 3 książki
+    HAVING COUNT(l.LoanID) > 3 
 );
 ROLLBACK;
 SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY());
---212:09:23
+--00:25:28
 
 EXPLAIN PLAN FOR
 SELECT 
     b.BookID, 
     b.Title, 
     b.PublicationDate, 
-    AVG(rv.Rating) AS AvgRating,  -- Średnia ocena książki
-    COUNT(DISTINCT l.LoanID) AS TotalLoans,  -- Liczba wypożyczeń książki
+    AVG(rv.Rating) AS AvgRating,  
+    COUNT(DISTINCT l.LoanID) AS TotalLoans,  
     SUM(CASE 
             WHEN l.DueDate < SYSDATE AND l.ReturnDate IS NULL THEN 1
             ELSE 0
-        END) AS TotalDelayedLoans,  -- Liczba wypożyczeń spóźnionych (nie oddanych na czas)
-    COUNT(DISTINCT bc.CopyID) AS TotalCopies,  -- Liczba dostępnych egzemplarzy książki
+        END) AS TotalDelayedLoans, 
+    COUNT(DISTINCT bc.CopyID) AS TotalCopies,  
     COUNT(DISTINCT CASE 
                      WHEN bc.Location LIKE 'Boczna aleja%' THEN bc.CopyID
                      ELSE NULL
-                   END) AS AlejaLocationCopies,  -- Liczba dostępnych egzemplarzy w lokalizacjach "Aleja"
-    COUNT(DISTINCT rv.ReviewID) AS TotalReviews,  -- Liczba recenzji książki
+                   END) AS AlejaLocationCopies,  
+    COUNT(DISTINCT rv.ReviewID) AS TotalReviews,  
     (SELECT COUNT(*)
      FROM BookCopies bc2
      WHERE bc2.BookID = b.BookID
-       AND bc2.IsAvailable = 'Y') AS TotalAvailableCopies  -- Łączna liczba dostępnych egzemplarzy książki
+       AND bc2.IsAvailable = 'Y') AS TotalAvailableCopies  
 FROM 
     Books b
 JOIN 
-    BookCopies bc ON b.BookID = bc.BookID  -- Połączenie z tabelą kopii książek
+    BookCopies bc ON b.BookID = bc.BookID 
 LEFT JOIN 
-    Reviews rv ON b.BookID = rv.BookID  -- Połączenie z recenzjami książek
+    Reviews rv ON b.BookID = rv.BookID  
 LEFT JOIN 
-    Loans l ON bc.CopyID = l.CopyID  -- Połączenie z wypożyczeniami książek
+    Loans l ON bc.CopyID = l.CopyID 
 LEFT JOIN 
-    Penalties p ON l.ReaderID = p.ReaderID AND p.IsPaid = 'N'  -- Połączenie z karami, które nie zostały opłacone
+    Penalties p ON l.ReaderID = p.ReaderID AND p.IsPaid = 'N'  
 WHERE 
-    b.PublicationDate < SYSDATE - INTERVAL '2' YEAR  -- Książki starsze niż 2 lata
-    AND EXISTS (  -- Książki dostępne w lokalizacjach 'Aleja'
+    b.PublicationDate < SYSDATE - INTERVAL '2' YEAR 
+    AND EXISTS (  
         SELECT 1
         FROM BookCopies bc2
         WHERE bc2.BookID = b.BookID
@@ -173,9 +165,9 @@ WHERE
 GROUP BY 
     b.BookID, b.Title, b.PublicationDate
 HAVING 
-    AVG(rv.Rating) >= 2  -- Książki, które mają średnią ocenę >= 4
-    AND COUNT(DISTINCT l.LoanID) > 1  -- Książki, które były wypożyczane więcej niż 5 razy
-    AND COUNT(DISTINCT rv.ReviewID) > 1  -- Książki, które mają więcej niż 1 recenzję
+    AVG(rv.Rating) >= 2  
+    AND COUNT(DISTINCT l.LoanID) > 1  
+    AND COUNT(DISTINCT rv.ReviewID) > 1  
 ORDER BY 
     AvgRating DESC, TotalLoans DESC;
 
@@ -262,7 +254,7 @@ WHERE l.LoanID IN (
         JOIN Books b2 ON rv2.BookID = b2.BookID
         WHERE rv2.Rating >= 4
         GROUP BY b2.BookID
-    ) high_rated_books ON b.BookID = high_rated_books.BookID  -- Poprawka: b.BookID w JOIN
+    ) high_rated_books ON b.BookID = high_rated_books.BookID  
 
     WHERE l2.ReturnDate IS NULL
       AND l2.DueDate < TO_DATE('2023-01-01', 'YYYY-MM-DD')
@@ -295,11 +287,11 @@ WHERE l.LoanID IN (
             AND bc2.Location LIKE 'Główna aleja%'
       )
 
-    GROUP BY l2.LoanID, r.ReaderID, bc.Location, b.BookID, high_loan_readers.LoanCount, high_rated_books.AvgRating -- Dodano aliasy do GROUP BY
+    GROUP BY l2.LoanID, r.ReaderID, bc.Location, b.BookID, high_loan_readers.LoanCount, high_rated_books.AvgRating 
 
     HAVING COUNT(rv.ReviewID) > 2
       AND high_loan_readers.LoanCount > 3
-      AND high_rated_books.AvgRating > 4.5 -- Sprawdzanie warunków w HAVING dla agregowanych aliasów
+      AND high_rated_books.AvgRating > 4.5 
 )
 ROLLBACK;
 SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY());
