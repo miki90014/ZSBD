@@ -13,7 +13,7 @@ WHERE
 GROUP BY 
     r.ReaderID, r.FirstName, r.LastName;
 --2.086s
-
+-- 1m 11.293s
 
 SELECT 
     r.ReaderID,
@@ -51,6 +51,7 @@ HAVING
     COUNT(DISTINCT l.LoanID) > 5  -- tylko czytelnicy, którzy wypożyczyli więcej niż 5 książek
     OR SUM(CASE WHEN p.IsPaid = 'N' THEN p.Amount ELSE 0 END) > 0;  -- lub mają zaległe kary
 --1.932s
+--42.632s
 
 
 
@@ -82,6 +83,7 @@ ORDER BY
     AverageRating DESC;
 
 --1.419s
+--2.760s
 
 
 
@@ -116,7 +118,7 @@ WHERE ReaderID IN (
 )
 AND IsPaid = 'N';
 -- 1.02s
-
+-- 0.243s
 
 
 UPDATE BookCopies bc
@@ -139,3 +141,4 @@ WHERE bc.CopyID IN (
     HAVING COUNT(l.LoanID) < 5  -- Wypożyczane mniej niż 5 razy
 );
 --1.402s
+--1.017s

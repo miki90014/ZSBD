@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 # Parametry połączenia z bazą danych
 DB_USERNAME = "SYS"
-DB_PASSWORD = "sudo"
+DB_PASSWORD = "221001"
 DB_DSN = "localhost:1521/XEPDB1"
 
 # Katalog zawierający pliki SQL
