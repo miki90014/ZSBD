@@ -40,6 +40,13 @@ def execute_sql_file(cursor, filename):
                     print(f"Błąd przy wykonywaniu polecenia w pliku {filename}: {command}: {e}")
                     continue
 
+def clear_buffer(connection):
+    with connection.cursor() as cursor:
+        try:
+            cursor.execute("ALTER SYSTEM FLUSH BUFFER_CACHE")
+        except cx_Oracle.DatabaseError as e:
+            print(f"Error during buffer flush: {e}")
+
 # Połączenie z bazą danych
 def execute_sql_scripts():
     sql_files = [f for f in os.listdir(SQL_FILES_DIRECTORY) if f.endswith(".sql")]
@@ -50,18 +57,22 @@ def execute_sql_scripts():
             with connection.cursor() as cursor:
                 for sql_file in tqdm(sql_files, desc="Processing sql", unit="sql_file"):
                     filepath = os.path.join(SQL_FILES_DIRECTORY, sql_file)
-                    start = time.time_ns()
+                    start = time.time()
                     execute_sql_file(cursor, filepath)
-                    end = time.time_ns()
+                    end = time.time()
                     execution_time = end - start
                     results[sql_file].append(execution_time)
                     connection.rollback()  # Rollback po wykonaniu każdego pliku
-                # TODO: dodać jakiś bufor
+            print(f"Flushing buffer after iteration {iteration + 1}")
+            clear_buffer(connection)
             iteration += 1
 
+print("Executing scripts")
+execute_sql_scripts()
+
 for result in results.keys():
-    max_time = 0
-    min_time = 999999
+    max_time = results[result][0]
+    min_time = 210642469000
     avg_time = 0
     for res in results[result]:
         if res > max_time:
