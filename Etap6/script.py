@@ -53,7 +53,7 @@ def execute_sql_scripts():
         # Ustanawiamy połączenie z bazą danych z uprawnieniami SYSDBA
     iteration = 0
     with cx_Oracle.connect(DB_USERNAME, DB_PASSWORD, DB_DSN, mode=cx_Oracle.SYSDBA) as connection:
-        while (iteration < 10):
+        while (iteration < 2):
             with connection.cursor() as cursor:
                 for sql_file in tqdm(sql_files, desc="Processing sql", unit="sql_file"):
                     filepath = os.path.join(SQL_FILES_DIRECTORY, sql_file)
